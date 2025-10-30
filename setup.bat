@@ -7,36 +7,55 @@ echo =========================================
 echo.
 
 REM Check Python
-echo Checking Python...
+echo Checking Python installations...
+
+REM Try py launcher first (Windows Python Launcher)
+py -3.12 --version >nul 2>&1
+if not errorlevel 1 (
+    echo [OK] Python 3.12 found via py launcher
+    set PYTHON_CMD=py -3.12
+    goto :check_node
+)
+
+py -3.11 --version >nul 2>&1
+if not errorlevel 1 (
+    echo [OK] Python 3.11 found via py launcher
+    set PYTHON_CMD=py -3.11
+    goto :check_node
+)
+
+REM Fall back to python command
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python is not installed. Please install Python 3.11+
+    echo [ERROR] Python is not installed. Please install Python 3.11 or 3.12
     echo Download from: https://www.python.org/downloads/
+    echo.
+    echo Make sure to check "Add Python to PATH" during installation
     pause
     exit /b 1
 )
 
 for /f "tokens=2" %%i in ('python --version 2>&1') do set PYTHON_VERSION=%%i
-echo [OK] Python %PYTHON_VERSION% found
+echo [INFO] Python %PYTHON_VERSION% found in PATH
 
-REM Check if Python version is 3.11 or 3.12
-echo Checking Python version compatibility...
+REM Check if default Python version is 3.11 or 3.12
 python -c "import sys; exit(0 if sys.version_info[:2] in [(3, 11), (3, 12)] else 1)" 2>nul
 if errorlevel 1 (
     echo.
-    echo [WARNING] Python %PYTHON_VERSION% detected.
-    echo This project requires Python 3.11 or 3.12 for best compatibility.
-    echo Python 3.13+ may have issues with some dependencies.
+    echo [WARNING] Default Python is %PYTHON_VERSION%
+    echo This project requires Python 3.11 or 3.12.
     echo.
-    echo Please install Python 3.11 or 3.12 from:
-    echo https://www.python.org/downloads/
-    echo.
-    echo Recommended: Python 3.12.x
+    echo You have multiple Python versions installed.
+    echo Please install Python 3.12 from: https://www.python.org/downloads/
+    echo During install, make sure to check "Add Python to PATH"
     echo.
     pause
     exit /b 1
 )
+set PYTHON_CMD=python
 echo [OK] Python version is compatible
+
+:check_node
 echo.
 
 REM Check Node
@@ -60,8 +79,8 @@ echo =========================================
 cd backend
 
 if not exist "venv" (
-    echo Creating virtual environment...
-    python -m venv venv
+    echo Creating virtual environment with %PYTHON_CMD%...
+    %PYTHON_CMD% -m venv venv
 )
 
 echo Installing Python dependencies...
