@@ -16,8 +16,27 @@ if errorlevel 1 (
     exit /b 1
 )
 
-for /f "tokens=2" %%i in ('python --version') do set PYTHON_VERSION=%%i
+for /f "tokens=2" %%i in ('python --version 2>&1') do set PYTHON_VERSION=%%i
 echo [OK] Python %PYTHON_VERSION% found
+
+REM Check if Python version is 3.11 or 3.12
+echo Checking Python version compatibility...
+python -c "import sys; exit(0 if sys.version_info[:2] in [(3, 11), (3, 12)] else 1)" 2>nul
+if errorlevel 1 (
+    echo.
+    echo [WARNING] Python %PYTHON_VERSION% detected.
+    echo This project requires Python 3.11 or 3.12 for best compatibility.
+    echo Python 3.13+ may have issues with some dependencies.
+    echo.
+    echo Please install Python 3.11 or 3.12 from:
+    echo https://www.python.org/downloads/
+    echo.
+    echo Recommended: Python 3.12.x
+    echo.
+    pause
+    exit /b 1
+)
+echo [OK] Python version is compatible
 echo.
 
 REM Check Node
@@ -48,6 +67,22 @@ if not exist "venv" (
 echo Installing Python dependencies...
 venv\Scripts\pip.exe install --quiet --upgrade pip
 venv\Scripts\pip.exe install --quiet -r requirements.txt
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Failed to install Python dependencies!
+    echo.
+    echo This usually means:
+    echo 1. You're using an incompatible Python version (need 3.11 or 3.12)
+    echo 2. Some packages require compilation and build tools are missing
+    echo.
+    echo Please:
+    echo 1. Uninstall Python 3.13 if you have it
+    echo 2. Install Python 3.11 or 3.12 from https://www.python.org/downloads/
+    echo 3. Run this setup script again
+    echo.
+    pause
+    exit /b 1
+)
 
 if not exist ".env" (
     echo Creating .env file from template...
