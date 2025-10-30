@@ -6,7 +6,9 @@
 
 Before you start, ensure you have:
 
-- ✅ **Python 3.11+** - [Download from python.org](https://www.python.org/downloads/)
+- ✅ **Python 3.11 or 3.12** - [Download from python.org](https://www.python.org/downloads/)
+  - ⚠️ **NOT Python 3.13** - Some dependencies don't support it yet
+  - **Recommended**: Python 3.12.x
   - During install, check "Add Python to PATH"
 - ✅ **Node.js 18+** - [Download from nodejs.org](https://nodejs.org/)
   - LTS version recommended
@@ -80,14 +82,15 @@ Try the sample COBOL files included:
 
 ## 🔧 Common Windows Issues
 
-### "python not recognized"
-**Problem:** Python not in PATH
+### "python not recognized" or wrong version
+**Problem:** Python not in PATH or using Python 3.13
 
 **Solution:**
-1. Reinstall Python and check "Add Python to PATH" during install
-2. Or manually add to PATH:
-   - Search "Environment Variables" in Windows
-   - Add Python install location to PATH
+1. Check your Python version: `python --version`
+2. If you have Python 3.13, uninstall it
+3. Install Python 3.11 or 3.12 from python.org
+4. During install, check "Add Python to PATH"
+5. Restart Command Prompt and try again
 
 ### "node not recognized"
 **Problem:** Node.js not in PATH

@@ -96,7 +96,7 @@ This opens two Command Prompt windows automatically for backend and frontend.
 
 ### Prerequisites
 
-- Python 3.11 or higher
+- Python **3.11 or 3.12** (NOT 3.13 - some dependencies not ready yet)
 - Node.js 18 or higher
 - npm or yarn
 
