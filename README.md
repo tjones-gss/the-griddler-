@@ -50,16 +50,44 @@ The Griddler provides two main capabilities:
 - ✅ Project structure and architecture
 - ✅ COBOL parser foundation
 - ✅ Code-based pattern comparison
-- ✅ Modern web UI
+- ✅ AI-assisted analysis (optional)
+- ✅ Modern web UI with React + Vite
 - ✅ File upload and management
+- ✅ Automatic conversion engine
+- ✅ Easy run scripts and documentation
 
-### Phase 2 (Planned)
-- 🔄 AI-assisted comparison analysis
+### Phase 2 (Future)
 - 🔄 Advanced conversion rules engine
-- 🔄 Batch processing
-- 🔄 Export reports and converted code
+- 🔄 Batch processing multiple files
+- 🔄 Export analysis reports
+- 🔄 Enhanced pattern detection
+- 🔄 Custom rule builder UI
 
 ## Getting Started
+
+### Quick Start
+
+The fastest way to get up and running:
+
+```bash
+# 1. Automated setup
+chmod +x setup.sh
+./setup.sh
+
+# 2. Start backend (terminal 1)
+cd backend
+./run.sh          # Linux/Mac
+# OR run.bat      # Windows
+
+# 3. Start frontend (terminal 2)
+cd frontend
+npm run dev
+
+# 4. Open browser
+# http://localhost:5173
+```
+
+See [QUICKSTART.md](QUICKSTART.md) for detailed instructions and [RUNNING.md](RUNNING.md) for troubleshooting.
 
 ### Prerequisites
 
@@ -67,37 +95,61 @@ The Griddler provides two main capabilities:
 - Node.js 18 or higher
 - npm or yarn
 
-### Installation
+### Manual Installation
 
-1. **Backend Setup**:
+**Backend:**
 ```bash
 cd backend
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env
 ```
 
-2. **Frontend Setup**:
+**Frontend:**
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 ```
 
 ### Running the Application
 
-1. **Start Backend**:
-```bash
-cd backend
-uvicorn app.main:app --reload --port 8000
-```
+#### Option 1: Easy Way (Recommended) ⭐
 
-2. **Start Frontend**:
 ```bash
+# Terminal 1 - Backend
+cd backend
+./run.sh          # Linux/Mac
+run.bat           # Windows
+
+# Terminal 2 - Frontend
 cd frontend
 npm run dev
 ```
 
-3. Open browser to `http://localhost:5173`
+#### Option 2: Both at Once (Linux/Mac)
+
+```bash
+./start.sh        # Start everything
+./stop.sh         # Stop everything
+```
+
+#### Option 3: Direct venv (No activation needed)
+
+```bash
+# Backend
+cd backend
+./venv/bin/uvicorn app.main:app --reload --port 8000
+
+# Frontend (in another terminal)
+cd frontend
+npm run dev
+```
+
+Open browser to `http://localhost:5173`
+
+> **Note:** If you get "uvicorn not recognized", use the run scripts or see [RUNNING.md](RUNNING.md) for troubleshooting.
 
 ## Usage
 
@@ -148,21 +200,87 @@ the-griddler/
 │   │   │   ├── analyzer/  # Code & AI analyzers
 │   │   │   └── converter/ # Conversion engine
 │   │   └── main.py        # FastAPI app entry
-│   ├── tests/
+│   ├── run.sh            # Easy run script (Linux/Mac)
+│   ├── run.bat           # Easy run script (Windows)
 │   └── requirements.txt
 ├── frontend/              # React frontend
 │   ├── src/
 │   │   ├── components/    # React components
 │   │   ├── pages/         # Page components
 │   │   ├── services/      # API services
-│   │   ├── hooks/         # Custom React hooks
 │   │   └── App.tsx
 │   └── package.json
 ├── samples/               # Sample COBOL files
 │   ├── pre/              # PRE conversion examples
 │   └── post/             # POST conversion examples
-└── docs/                  # Documentation
+├── setup.sh              # Automated setup script
+├── start.sh              # Start both backend and frontend
+├── stop.sh               # Stop all services
+├── README.md             # This file
+├── QUICKSTART.md         # Quick start guide
+└── RUNNING.md            # Comprehensive running guide
 ```
+
+## Documentation
+
+- **[README.md](README.md)** - This file, project overview
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
+- **[RUNNING.md](RUNNING.md)** - Comprehensive troubleshooting guide
+- **[samples/README.md](samples/README.md)** - Sample COBOL programs and patterns
+
+## Key Transformation Patterns
+
+The Griddler detects and converts these common patterns:
+
+### 1. REPEAT GROUP → GRID Structure
+**PRE:**
+```cobol
+05  CUSTOMER-ENTRY REPEAT 15 TIMES.
+    10  SP2-RX-CUST-ID    PIC X(10).
+```
+
+**POST:**
+```cobol
+05  CUSTOMER-ROW OCCURS 15 TIMES INDEXED BY CUST-IDX.
+    10  CUST-ID-COL       PIC X(10).
+```
+
+### 2. SP2-RX- Fields → -COL Fields
+**PRE:** `SP2-RX-CUST-NAME`
+**POST:** `CUST-NAME-COL`
+
+### 3. PERFORM VARYING → SCR100 Operations
+**PRE:**
+```cobol
+PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > 15
+    MOVE SPACES TO SP2-RX-CUST-ID (WS-INDEX)
+END-PERFORM
+```
+
+**POST:**
+```cobol
+MOVE 'INIT' TO SCR100-FUNCTION
+CALL 'SCR100' USING SCR100-PARAMS
+```
+
+See `samples/` directory for complete examples.
+
+## Troubleshooting
+
+### "uvicorn not recognized"
+Use the run script: `cd backend && ./run.sh`
+
+### Port already in use
+```bash
+./stop.sh  # Stop all services
+# Or manually: kill $(lsof -t -i:8000)
+```
+
+### Frontend can't connect
+1. Check backend is running: `curl http://localhost:8000/api/health`
+2. Check `frontend/.env` has correct API URL
+
+See [RUNNING.md](RUNNING.md) for comprehensive troubleshooting.
 
 ## Contributing
 
