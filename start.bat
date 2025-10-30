@@ -21,16 +21,12 @@ if not exist "frontend\node_modules" (
 )
 
 echo Starting backend on port 8000...
-cd backend
-start "Griddler Backend" cmd /k "run.bat"
-cd ..
+start "Griddler Backend" cmd /k "cd /d "%~dp0backend" && run.bat"
 
 timeout /t 3 /nobreak >nul
 
 echo Starting frontend on port 5173...
-cd frontend
-start "Griddler Frontend" cmd /k "npm run dev"
-cd ..
+start "Griddler Frontend" cmd /k "cd /d "%~dp0frontend" && npm run dev"
 
 timeout /t 3 /nobreak >nul
 

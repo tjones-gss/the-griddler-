@@ -173,9 +173,7 @@ To use AI-assisted analysis:
 
 ## 📚 Next Steps
 
-- **[README.md](README.md)** - Full project documentation
-- **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup guide
-- **[RUNNING.md](RUNNING.md)** - Comprehensive troubleshooting
+- **[README.md](README.md)** - Full project documentation and setup guide
 - **[samples\README.md](samples\README.md)** - Sample COBOL programs
 
 ## 💡 Tips for Windows Users

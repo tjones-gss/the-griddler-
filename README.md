@@ -92,8 +92,6 @@ start.bat
 ```
 This opens two Command Prompt windows automatically for backend and frontend.
 
-See [QUICKSTART.md](QUICKSTART.md) for detailed instructions and [RUNNING.md](RUNNING.md) for troubleshooting.
-
 > **Linux/Mac users:** Use `setup.sh`, `./run.sh`, and `start.sh` instead.
 
 ### Prerequisites
@@ -202,7 +200,7 @@ npm run dev
 
 **Open browser to:** `http://localhost:5173`
 
-> **Note:** If you get "uvicorn not recognized", use `run.bat` (Windows) or `./run.sh` (Linux/Mac) - see [RUNNING.md](RUNNING.md) for troubleshooting.
+> **Note:** If you get "uvicorn not recognized", use `run.bat` (Windows) or `./run.sh` (Linux/Mac) - see Troubleshooting section below.
 
 ## Usage
 
@@ -272,16 +270,13 @@ the-griddler/
 ├── start.sh              # Start everything (Linux/Mac)
 ├── stop.sh               # Stop all services (Linux/Mac)
 ├── README.md             # This file
-├── QUICKSTART.md         # Quick start guide
-└── RUNNING.md            # Comprehensive running guide
+└── WINDOWS.md            # Windows-specific guide
 ```
 
 ## Documentation
 
 - **[WINDOWS.md](WINDOWS.md)** - 🪟 Windows-specific quick start guide (recommended for Windows users!)
-- **[README.md](README.md)** - This file, project overview
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
-- **[RUNNING.md](RUNNING.md)** - Comprehensive troubleshooting guide
+- **[README.md](README.md)** - This file, project overview and complete guide
 - **[samples/README.md](samples/README.md)** - Sample COBOL programs and patterns
 
 ## Key Transformation Patterns
@@ -357,8 +352,6 @@ taskkill /PID <PID> /F
 1. Check backend is running: Open `http://localhost:8000/api/health` in browser
 2. Verify `frontend\.env` has: `VITE_API_URL=http://localhost:8000`
 3. Restart both services
-
-See [RUNNING.md](RUNNING.md) for comprehensive troubleshooting.
 
 ## Contributing
 
