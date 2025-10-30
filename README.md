@@ -2,6 +2,8 @@
 
 An adaptable parser system for analyzing and converting COBOL programs from REPEAT GROUPS logic to SCR100 grid logic.
 
+> **🪟 Windows Users:** See [WINDOWS.md](WINDOWS.md) for a dedicated Windows quick start guide!
+
 ## Overview
 
 The Griddler provides two main capabilities:
@@ -276,6 +278,7 @@ the-griddler/
 
 ## Documentation
 
+- **[WINDOWS.md](WINDOWS.md)** - 🪟 Windows-specific quick start guide (recommended for Windows users!)
 - **[README.md](README.md)** - This file, project overview
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
 - **[RUNNING.md](RUNNING.md)** - Comprehensive troubleshooting guide
