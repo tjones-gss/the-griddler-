@@ -40,8 +40,32 @@ cp .env.example .env
 
 ## Running the Application
 
-You need two terminal windows:
+### Option 1: Easy Way (Recommended) ⭐
 
+**Terminal 1 - Backend:**
+```bash
+cd backend
+./run.sh          # Linux/Mac
+# OR
+run.bat           # Windows
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+
+### Option 2: Both at Once (Linux/Mac only)
+```bash
+# From project root
+./start.sh
+
+# To stop everything
+./stop.sh
+```
+
+### Option 3: Manual Way
 **Terminal 1 - Backend:**
 ```bash
 cd backend
@@ -55,7 +79,7 @@ cd frontend
 npm run dev
 ```
 
-Open your browser to: **http://localhost:5173**
+**Open your browser to: http://localhost:5173**
 
 ## First Steps
 
@@ -92,10 +116,11 @@ Open your browser to: **http://localhost:5173**
 
 ## Troubleshooting
 
-### Backend won't start
+### Backend won't start / "uvicorn not recognized"
+- **Solution 1 (Easiest)**: Use the run script: `cd backend && ./run.sh`
+- **Solution 2**: Run directly from venv: `cd backend && ./venv/bin/uvicorn app.main:app --reload`
+- **Solution 3**: Reinstall: `cd backend && ./venv/bin/pip install -r requirements.txt`
 - Ensure Python 3.11+ is installed: `python3 --version`
-- Activate virtual environment: `source venv/bin/activate`
-- Reinstall dependencies: `pip install -r requirements.txt`
 
 ### Frontend won't start
 - Ensure Node 18+ is installed: `node --version`
