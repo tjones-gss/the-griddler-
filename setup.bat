@@ -78,7 +78,19 @@ echo Setting up Backend...
 echo =========================================
 cd backend
 
-if not exist "venv" (
+REM Check if venv exists and is valid
+if exist "venv" (
+    echo Checking existing virtual environment...
+    venv\Scripts\python.exe --version >nul 2>&1
+    if errorlevel 1 (
+        echo [WARNING] Existing venv is broken or incompatible. Recreating...
+        rmdir /s /q venv
+        echo Creating virtual environment with %PYTHON_CMD%...
+        %PYTHON_CMD% -m venv venv
+    ) else (
+        echo [OK] Using existing virtual environment
+    )
+) else (
     echo Creating virtual environment with %PYTHON_CMD%...
     %PYTHON_CMD% -m venv venv
 )
