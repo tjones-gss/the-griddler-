@@ -93,7 +93,8 @@ class CobolConverter:
         self, code: str
     ) -> tuple[str, List[Dict[str, Any]]]:
         """
-        Apply default transformation rules.
+        Apply SCR100 grid conversion transformations based on ORD143.CBL patterns.
+        NOTE: This provides guidance markers, not full automatic conversion.
 
         Args:
             code: Source code
@@ -104,43 +105,171 @@ class CobolConverter:
         converted = code
         applied_rules = []
 
-        # Rule 1: Convert REPEAT GROUP to GRID structure
-        converted, rule1_applied = self._convert_repeat_to_grid(converted)
+        # Rule 1: Mark OCCURS clauses for GRID-REC conversion
+        converted, rule1_applied = self._mark_occurs_for_grid_rec(converted)
         if rule1_applied:
             applied_rules.append({
-                "rule_id": "REPEAT_TO_GRID",
-                "description": "Converted REPEAT n TIMES to GRID structure",
+                "rule_id": "MARK_OCCURS_TO_GRID_REC",
+                "description": "Marked OCCURS clauses for GRID-REC structure conversion",
+                "action_required": "Create GRID-REC with fields matching OCCURS structure",
+                "confidence": 0.95
+            })
+
+        # Rule 2: Mark Working Storage for SCR100.WS addition
+        converted, rule2_applied = self._mark_working_storage_for_scr100(converted)
+        if rule2_applied:
+            applied_rules.append({
+                "rule_id": "MARK_ADD_SCR100_COPY",
+                "description": "Marked location to add COPY \"SCR100.WS\"",
+                "action_required": "Add COPY \"SCR100.WS\" after other COPY statements",
+                "confidence": 1.0
+            })
+
+        # Rule 3: Mark P1000-CONVERSE for VBX handler
+        converted, rule3_applied = self._mark_converse_for_vbx(converted)
+        if rule3_applied:
+            applied_rules.append({
+                "rule_id": "MARK_ADD_VBX_HANDLER",
+                "description": "Marked P1000-CONVERSE for VBX event handling",
+                "action_required": "Add VBX key check and SCR100 event processing loop",
+                "confidence": 0.95
+            })
+
+        # Rule 4: Mark locations for new grid paragraphs
+        converted, rule4_applied = self._mark_for_grid_paragraphs(converted)
+        if rule4_applied:
+            applied_rules.append({
+                "rule_id": "MARK_ADD_GRID_PARAGRAPHS",
+                "description": "Marked locations for INITIALIZE-GRID, LOAD-GRID, CALL-SCR100, GET-ROW-DATA",
+                "action_required": "Add grid management paragraphs at end of program",
+                "confidence": 1.0
+            })
+
+        # Rule 5: Identify screen open location for INITIALIZE-GRID call
+        converted, rule5_applied = self._mark_screen_open_for_init(converted)
+        if rule5_applied:
+            applied_rules.append({
+                "rule_id": "MARK_CALL_INITIALIZE_GRID",
+                "description": "Marked location to call INITIALIZE-GRID and LOAD-GRID",
+                "action_required": "Add PERFORM INITIALIZE-GRID and PERFORM LOAD-GRID after screen open",
+                "confidence": 0.9
+            })
+
+        # Rule 6: Identify PERFORM VARYING loops for grid loading
+        converted, rule6_applied = self._mark_perform_varying_for_grid(converted)
+        if rule6_applied:
+            applied_rules.append({
+                "rule_id": "MARK_PERFORM_TO_LOAD_GRID",
+                "description": "Marked PERFORM VARYING loops that should call LOAD-GRID",
+                "action_required": "Replace array population loops with PERFORM LOAD-GRID",
                 "confidence": 0.85
             })
 
-        # Rule 2: Convert SP2-RX- fields to GRID fields
-        converted, rule2_applied = self._convert_sp2_to_grid_fields(converted)
-        if rule2_applied:
-            applied_rules.append({
-                "rule_id": "SP2_TO_GRID_FIELDS",
-                "description": "Converted SP2-RX- fields to GRID structure",
-                "confidence": 0.8
-            })
-
-        # Rule 3: Add SCR100 calls
-        converted, rule3_applied = self._add_scr100_calls(converted)
-        if rule3_applied:
-            applied_rules.append({
-                "rule_id": "ADD_SCR100_CALLS",
-                "description": "Added SCR100 initialization and calls",
-                "confidence": 0.75
-            })
-
-        # Rule 4: Convert PERFORM VARYING loops
-        converted, rule4_applied = self._convert_perform_varying(converted)
-        if rule4_applied:
-            applied_rules.append({
-                "rule_id": "PERFORM_TO_SCR100",
-                "description": "Converted PERFORM VARYING to SCR100 operations",
-                "confidence": 0.7
-            })
-
         return converted, applied_rules
+
+    def _mark_occurs_for_grid_rec(self, code: str) -> tuple[str, bool]:
+        """Mark OCCURS clauses that need GRID-REC conversion."""
+        pattern = re.compile(
+            r'(\s*)(\d+\s+\w+[-\w]*\s+OCCURS\s+\d+\s+TIMES)',
+            re.IGNORECASE | re.MULTILINE
+        )
+
+        def mark_func(match):
+            indent = match.group(1)
+            original = match.group(2)
+            return (
+                f"{indent}      *TODO-SCR100: Convert this OCCURS to GRID-REC structure\n"
+                f"{indent}{original}"
+            )
+
+        converted = pattern.sub(mark_func, code)
+        return converted, converted != code
+
+    def _mark_working_storage_for_scr100(self, code: str) -> tuple[str, bool]:
+        """Mark Working Storage section to add SCR100.WS."""
+        pattern = re.compile(
+            r'(WORKING-STORAGE\s+SECTION\.\s*\n)',
+            re.IGNORECASE
+        )
+
+        if pattern.search(code):
+            converted = pattern.sub(
+                r'\1\n      *TODO-SCR100: Add COPY "SCR100.WS" after other COPY statements\n',
+                code,
+                count=1
+            )
+            return converted, True
+        return code, False
+
+    def _mark_converse_for_vbx(self, code: str) -> tuple[str, bool]:
+        """Mark P1000-CONVERSE paragraph for VBX handler addition."""
+        pattern = re.compile(
+            r'(\s*P1000-CONVERSE\.\s*\n)',
+            re.IGNORECASE
+        )
+
+        if pattern.search(code):
+            converted = pattern.sub(
+                r'\1      *TODO-SCR100: Add VBX key check (IF [SCREEN]-KEY = SP2-KEY-VBX)\n'
+                r'      *TODO-SCR100: Add grid ID check (AND [SCREEN]-MENU-ID = [SCREEN]-GRID-I)\n'
+                r'      *TODO-SCR100: Add SCR100 event processing loop\n',
+                code,
+                count=1
+            )
+            return converted, True
+        return code, False
+
+    def _mark_for_grid_paragraphs(self, code: str) -> tuple[str, bool]:
+        """Mark end of program for grid paragraph additions."""
+        # Find end of procedure division (before last period or END PROGRAM)
+        if re.search(r'PROCEDURE\s+DIVISION', code, re.IGNORECASE):
+            marker = (
+                "\n      *TODO-SCR100: Add these paragraphs at end of program:\n"
+                "      *TODO-SCR100: - INITIALIZE-GRID (grid setup with headers, widths, formats)\n"
+                "      *TODO-SCR100: - LOAD-GRID (clear rows, load rows, redraw)\n"
+                "      *TODO-SCR100: - LOAD-GRID-ROWS (loop through data, add rows)\n"
+                "      *TODO-SCR100: - CALL-SCR100 (wrapper for SCR100 calls with error handling)\n"
+                "      *TODO-SCR100: - GET-ROW-DATA (retrieve selected row data)\n"
+            )
+            converted = code + marker
+            return converted, True
+        return code, False
+
+    def _mark_screen_open_for_init(self, code: str) -> tuple[str, bool]:
+        """Mark location after screen open for grid initialization."""
+        # Look for COMPROC-CALL-SP2 or similar screen open patterns
+        pattern = re.compile(
+            r'(PERFORM\s+COMPROC-CALL-SP2.*?\.\s*\n)',
+            re.IGNORECASE | re.DOTALL
+        )
+
+        if pattern.search(code):
+            converted = pattern.sub(
+                r'\1      *TODO-SCR100: Add PERFORM INITIALIZE-GRID here\n'
+                r'      *TODO-SCR100: Add PERFORM LOAD-GRID here\n',
+                code,
+                count=1
+            )
+            return converted, True
+        return code, False
+
+    def _mark_perform_varying_for_grid(self, code: str) -> tuple[str, bool]:
+        """Mark PERFORM VARYING loops that populate arrays."""
+        pattern = re.compile(
+            r'(\s*PERFORM\s+VARYING\s+\w+\s+FROM\s+\d+.*?END-PERFORM)',
+            re.IGNORECASE | re.DOTALL
+        )
+
+        def mark_func(match):
+            original = match.group(1)
+            return (
+                f"      *TODO-SCR100: Replace this array population loop with PERFORM LOAD-GRID\n"
+                f"{original}\n"
+                f"      *TODO-SCR100: End of loop to be replaced\n"
+            )
+
+        converted = pattern.sub(mark_func, code)
+        return converted, converted != code
 
     def _convert_repeat_to_grid(self, code: str) -> tuple[str, bool]:
         """

@@ -10,24 +10,67 @@ from app.models.schemas import PatternMatch
 class CobolParser:
     """Parser for COBOL code focusing on grid logic patterns."""
 
-    # Patterns for REPEAT GROUP (PRE conversion)
+    # Patterns for REPEAT GROUP (PRE conversion) - Based on ORD143.CBL analysis
     REPEAT_GROUP_PATTERNS = {
-        "repeat_group_def": r"^\s*\d+\s+(\w+[-\w]*)\s+REPEAT\s+(\d+)\s+TIMES",
-        "sp2_rx_field": r"^\s*\d+\s+(SP2-RX-\w+)",
+        # Data structures with OCCURS (line 130: PGM-ENTRIES OCCURS 24 TIMES)
         "occurs_clause": r"OCCURS\s+(\d+)\s+TIMES",
-        "indexed_by": r"INDEXED\s+BY\s+(\w+)",
+        # Field references in working storage
+        "working_storage_occurs": r"^\s*\d+\s+(\w+[-\w]*)\s+OCCURS\s+(\d+)",
+        # PERFORM VARYING loops that iterate over arrays
         "perform_varying": r"PERFORM\s+.*VARYING\s+(\w+)\s+FROM\s+(\d+)\s+BY\s+(\d+)\s+UNTIL",
+        # P1000-CONVERSE paragraph (main event loop)
+        "converse_paragraph": r"^\s*P1000-CONVERSE\.",
+        # PERFORM P1000-CONVERSE THRU P1000-EXIT pattern
+        "perform_converse": r"PERFORM\s+P1000-CONVERSE\s+THRU\s+P1000-EXIT",
     }
 
-    # Patterns for SCR100 (POST conversion)
+    # Patterns for SCR100 (POST conversion) - Based on ORD143.CBL SCR100 implementation
     SCR100_PATTERNS = {
-        "scr100_call": r"CALL\s+['\"]SCR100['\"]",
-        "grid_definition": r"^\s*\d+\s+(\w+[-\w]*-GRID)",
-        "grid_row": r"^\s*\d+\s+(\w+[-\w]*-ROW)",
-        "grid_column": r"^\s*\d+\s+(\w+[-\w]*-COL)",
-        "scr100_init": r"MOVE\s+['\"]INIT['\"].*SCR100",
-        "scr100_load": r"MOVE\s+['\"]LOAD['\"].*SCR100",
-        "scr100_save": r"MOVE\s+['\"]SAVE['\"].*SCR100",
+        # SCR100 copybook (line 199: COPY "SCR100.WS")
+        "scr100_copy": r"COPY\s+['\"]SCR100\.WS['\"]",
+        # GRID-REC structure (line 205-207)
+        "grid_rec_definition": r"^\s*\d+\s+GRID-REC\.",
+        # GRID-REC-LEN variable (line 208)
+        "grid_rec_len": r"GRID-REC-LEN\s+PIC\s+9",
+        # Grid field in SP2 (OES143A-GRID-I PIC S9(4) COMP-5)
+        "grid_field_sp2": r"(\w+-GRID-I)\s+PIC\s+S9\(4\)\s+COMP-5",
+        # VBX key event handling (line 642: IF [SCREEN]-KEY = SP2-KEY-VBX)
+        "vbx_key_check": r"IF\s+\w+-KEY\s*=\s*SP2-KEY-VBX",
+        # Grid ID check in VBX handler (line 643: AND [SCREEN]-MENU-ID = [SCREEN]-GRID-I)
+        "vbx_grid_check": r"AND\s+\w+-MENU-ID\s*=\s*\w+-GRID-I",
+        # SCR100 event processing loop (line 646-647: PERFORM WITH TEST AFTER UNTIL NOT SCR100-MORE-EVENTS)
+        "scr100_event_loop": r"UNTIL\s+NOT\s+SCR100-MORE-EVENTS",
+        # SET SCR100-PROCESS-EVENTS (line 648)
+        "scr100_process_events": r"SET\s+SCR100-PROCESS-EVENTS\s+TO\s+TRUE",
+        # SCR100 event types (lines 651, 664)
+        "scr100_event_field_chg": r"IF\s+SCR100-EVENT-FIELD-CHG",
+        "scr100_event_select": r"IF\s+SCR100-EVENT-SELECT",
+        # INITIALIZE-GRID paragraph (line 1254)
+        "initialize_grid_para": r"^\s*INITIALIZE-GRID\.",
+        # LOAD-GRID paragraph (line 1328)
+        "load_grid_para": r"^\s*LOAD-GRID\.",
+        # CALL-SCR100 paragraph (line 1355)
+        "call_scr100_para": r"^\s*CALL-SCR100\.",
+        # GET-ROW-DATA paragraph (line 1320)
+        "get_row_data_para": r"^\s*GET-ROW-DATA\.",
+        # SET SCR100-INITIALIZE-GRID (line 1258)
+        "scr100_initialize": r"SET\s+SCR100-INITIALIZE-GRID\s+TO\s+TRUE",
+        # SET SCR100-CLEAR-ROWS (line 1331)
+        "scr100_clear_rows": r"SET\s+SCR100-CLEAR-ROWS\s+TO\s+TRUE",
+        # SET SCR100-ADD-ROW (line 1342)
+        "scr100_add_row": r"SET\s+SCR100-ADD-ROW\s+TO\s+TRUE",
+        # SET SCR100-REDRAW-GRID (line 1334)
+        "scr100_redraw_grid": r"SET\s+SCR100-REDRAW-GRID\s+TO\s+TRUE",
+        # SET SCR100-CLOSE-GRID (line 1178)
+        "scr100_close_grid": r"SET\s+SCR100-CLOSE-GRID\s+TO\s+TRUE",
+        # SET SCR100-GET-ROW-DATA (line 1322)
+        "scr100_get_row_data": r"SET\s+SCR100-GET-ROW-DATA\s+TO\s+TRUE",
+        # CALL "GSSERP.SCR100" (line 1363)
+        "scr100_call": r"CALL\s+['\"]GSSERP\.SCR100['\"]",
+        # SCR100-LINKS usage
+        "scr100_links": r"USING\s+SCR100-LINKS",
+        # INITIALIZE SCR100-LINKS (line 644, 1256, etc.)
+        "initialize_scr100_links": r"INITIALIZE\s+SCR100-LINKS",
     }
 
     def __init__(self):

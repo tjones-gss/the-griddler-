@@ -61,7 +61,7 @@ class CodeAnalyzer:
         post_patterns: List[PatternMatch]
     ) -> List[Dict[str, Any]]:
         """
-        Detect transformation rules by comparing PRE and POST patterns.
+        Detect SCR100 grid conversion transformation rules based on ORD143.CBL patterns.
 
         Args:
             pre_code: PRE conversion code
@@ -74,48 +74,126 @@ class CodeAnalyzer:
         """
         rules = []
 
-        # Rule 1: REPEAT GROUP to SCR100 GRID
-        if any(p.pattern_type == "PRE_REPEAT_GROUP_DEF" for p in pre_patterns):
-            if any(p.pattern_type == "POST_SCR100_CALL" for p in post_patterns):
-                rules.append({
-                    "rule_id": "REPEAT_TO_SCR100",
-                    "description": "Convert REPEAT GROUP to SCR100 CALL",
-                    "from_pattern": "REPEAT n TIMES",
-                    "to_pattern": "CALL 'SCR100'",
-                    "confidence": 0.9
-                })
-
-        # Rule 2: SP2-RX- fields to GRID structure
-        pre_sp2_fields = self.parser.extract_field_names(pre_code, "SP2-RX-")
-        if pre_sp2_fields and any("GRID" in p.code_snippet for p in post_patterns):
+        # Rule 1: Add COPY "SCR100.WS" to Working Storage
+        has_scr100_copy = any("SCR100_COPY" in p.pattern_type for p in post_patterns)
+        if has_scr100_copy and "WORKING-STORAGE" in pre_code.upper():
             rules.append({
-                "rule_id": "SP2_TO_GRID",
-                "description": "Convert SP2-RX- fields to GRID structure",
-                "from_pattern": "SP2-RX-*",
-                "to_pattern": "*-GRID / *-ROW / *-COL",
-                "affected_fields": pre_sp2_fields,
-                "confidence": 0.85
+                "rule_id": "ADD_SCR100_COPY",
+                "description": "Add COPY \"SCR100.WS\" to Working Storage Section",
+                "from_pattern": "No SCR100 copybook",
+                "to_pattern": "COPY \"SCR100.WS\"",
+                "location": "After COPY statements in Working Storage",
+                "confidence": 1.0
             })
 
-        # Rule 3: PERFORM VARYING to SCR100 operations
-        if any("PERFORM_VARYING" in p.pattern_type for p in pre_patterns):
-            if any("SCR100_LOAD" in p.pattern_type or "SCR100_SAVE" in p.pattern_type for p in post_patterns):
-                rules.append({
-                    "rule_id": "PERFORM_TO_SCR100_OPS",
-                    "description": "Convert PERFORM VARYING loops to SCR100 LOAD/SAVE",
-                    "from_pattern": "PERFORM VARYING",
-                    "to_pattern": "SCR100 LOAD/SAVE operations",
-                    "confidence": 0.8
-                })
-
-        # Rule 4: OCCURS clause transformation
-        if any("OCCURS_CLAUSE" in p.pattern_type for p in pre_patterns):
+        # Rule 2: OCCURS to GRID-REC structure
+        has_occurs = any("OCCURS_CLAUSE" in p.pattern_type for p in pre_patterns)
+        has_grid_rec = any("GRID_REC_DEFINITION" in p.pattern_type for p in post_patterns)
+        if has_occurs and has_grid_rec:
             rules.append({
-                "rule_id": "OCCURS_TO_GRID_DEF",
-                "description": "Convert OCCURS clause to GRID definition",
-                "from_pattern": "OCCURS n TIMES",
-                "to_pattern": "Grid structure with rows",
-                "confidence": 0.75
+                "rule_id": "OCCURS_TO_GRID_REC",
+                "description": "Convert OCCURS arrays to GRID-REC structure",
+                "from_pattern": "03 [NAME]-ENTRIES OCCURS n TIMES\n   05 [FIELD]  PIC X",
+                "to_pattern": "01 GRID-REC\n   05 GRID-[FIELD]  PIC X\n01 GRID-REC-LEN PIC 9(09)",
+                "location": "Working Storage Section",
+                "confidence": 0.95
+            })
+
+        # Rule 3: Add Grid ID field to SP2 file
+        has_grid_field = any("GRID_FIELD_SP2" in p.pattern_type for p in post_patterns)
+        if has_grid_field:
+            rules.append({
+                "rule_id": "ADD_GRID_FIELD_SP2",
+                "description": "Add grid control field to SP2 screen file",
+                "from_pattern": "No grid field",
+                "to_pattern": "05 [SCREEN]-GRID-I PIC S9(4) COMP-5 VALUE +[UNIQUE_ID]",
+                "location": "SP2 file (screen definition)",
+                "confidence": 1.0
+            })
+
+        # Rule 4: Add VBX event handling in P1000-CONVERSE
+        has_vbx_check = any("VBX_KEY_CHECK" in p.pattern_type for p in post_patterns)
+        has_converse = any("CONVERSE_PARAGRAPH" in p.pattern_type for p in pre_patterns)
+        if has_vbx_check and has_converse:
+            rules.append({
+                "rule_id": "ADD_VBX_EVENT_HANDLER",
+                "description": "Add VBX event handling logic to P1000-CONVERSE paragraph",
+                "from_pattern": "IF [SCREEN]-KEY = ...",
+                "to_pattern": "IF [SCREEN]-KEY = SP2-KEY-VBX\n   AND [SCREEN]-MENU-ID = [SCREEN]-GRID-I\n   [event processing loop]",
+                "location": "P1000-CONVERSE paragraph",
+                "confidence": 0.95
+            })
+
+        # Rule 5: Add SCR100 event processing loop
+        has_event_loop = any("SCRE100_EVENT_LOOP" in p.pattern_type for p in post_patterns)
+        if has_event_loop:
+            rules.append({
+                "rule_id": "ADD_SCR100_EVENT_LOOP",
+                "description": "Add SCR100 event processing loop",
+                "from_pattern": "No event loop",
+                "to_pattern": "PERFORM WITH TEST AFTER\n   UNTIL NOT SCR100-MORE-EVENTS\n   SET SCR100-PROCESS-EVENTS TO TRUE",
+                "location": "VBX event handler in P1000-CONVERSE",
+                "confidence": 1.0
+            })
+
+        # Rule 6: Add INITIALIZE-GRID paragraph
+        has_init_grid = any("INITIALIZE_GRID_PARA" in p.pattern_type for p in post_patterns)
+        if has_init_grid:
+            rules.append({
+                "rule_id": "ADD_INITIALIZE_GRID",
+                "description": "Add INITIALIZE-GRID paragraph with grid setup",
+                "from_pattern": "No grid initialization",
+                "to_pattern": "INITIALIZE-GRID paragraph with:\n- SET SCR100-INITIALIZE-GRID TO TRUE\n- Grid dimensions, headers, widths, formats\n- PERFORM CALL-SCR100",
+                "location": "New paragraph after screen open",
+                "confidence": 1.0
+            })
+
+        # Rule 7: Add LOAD-GRID paragraphs
+        has_load_grid = any("LOAD_GRID_PARA" in p.pattern_type for p in post_patterns)
+        if has_load_grid:
+            rules.append({
+                "rule_id": "ADD_LOAD_GRID",
+                "description": "Add LOAD-GRID and LOAD-GRID-ROWS paragraphs",
+                "from_pattern": "PERFORM VARYING loop to populate array",
+                "to_pattern": "LOAD-GRID:\n- SET SCR100-CLEAR-ROWS\n- PERFORM LOAD-GRID-ROWS\n- SET SCR100-REDRAW-GRID",
+                "location": "Replace array population logic",
+                "confidence": 0.9
+            })
+
+        # Rule 8: Add CALL-SCR100 paragraph
+        has_call_scr100 = any("CALL_SCR100_PARA" in p.pattern_type for p in post_patterns)
+        if has_call_scr100:
+            rules.append({
+                "rule_id": "ADD_CALL_SCR100",
+                "description": "Add CALL-SCR100 paragraph with error handling",
+                "from_pattern": "No SCR100 call wrapper",
+                "to_pattern": "CALL-SCR100:\n- Move screen/grid identifiers\n- CALL \"GSSERP.SCR100\" USING SCR100-LINKS\n- ON OVERFLOW error handling",
+                "location": "New utility paragraph",
+                "confidence": 1.0
+            })
+
+        # Rule 9: Add GET-ROW-DATA paragraph
+        has_get_row = any("GET_ROW_DATA_PARA" in p.pattern_type for p in post_patterns)
+        if has_get_row:
+            rules.append({
+                "rule_id": "ADD_GET_ROW_DATA",
+                "description": "Add GET-ROW-DATA paragraph for row selection",
+                "from_pattern": "Direct array access",
+                "to_pattern": "GET-ROW-DATA:\n- SET SCR100-GET-ROW-DATA TO TRUE\n- SET SCR100-ROW-DATA TO ADDRESS OF GRID-REC\n- PERFORM CALL-SCR100",
+                "location": "Event handler support paragraph",
+                "confidence": 1.0
+            })
+
+        # Rule 10: Add grid close logic
+        has_close_grid = any("SCR100_CLOSE_GRID" in p.pattern_type for p in post_patterns)
+        if has_close_grid:
+            rules.append({
+                "rule_id": "ADD_GRID_CLOSE",
+                "description": "Add grid cleanup when closing screen",
+                "from_pattern": "No grid cleanup",
+                "to_pattern": "SET SCR100-CLOSE-GRID TO TRUE\nPERFORM CALL-SCR100",
+                "location": "PROC-CLOSE-WINDOW or screen exit paragraph",
+                "confidence": 1.0
             })
 
         return rules
