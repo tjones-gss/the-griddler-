@@ -65,29 +65,34 @@ The Griddler provides two main capabilities:
 
 ## Getting Started
 
-### Quick Start
+### Quick Start (Windows)
 
 The fastest way to get up and running:
 
-```bash
-# 1. Automated setup
-chmod +x setup.sh
-./setup.sh
+```batch
+REM 1. Automated setup (double-click or run in Command Prompt)
+setup.bat
 
-# 2. Start backend (terminal 1)
+REM 2. Start backend (Command Prompt 1)
 cd backend
-./run.sh          # Linux/Mac
-# OR run.bat      # Windows
+run.bat
 
-# 3. Start frontend (terminal 2)
+REM 3. Start frontend (Command Prompt 2)
 cd frontend
 npm run dev
 
-# 4. Open browser
-# http://localhost:5173
+REM 4. Open browser to: http://localhost:5173
 ```
 
+**Or use the all-in-one starter:**
+```batch
+start.bat
+```
+This opens two Command Prompt windows automatically for backend and frontend.
+
 See [QUICKSTART.md](QUICKSTART.md) for detailed instructions and [RUNNING.md](RUNNING.md) for troubleshooting.
+
+> **Linux/Mac users:** Use `setup.sh`, `./run.sh`, and `start.sh` instead.
 
 ### Prerequisites
 
@@ -97,16 +102,32 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions and [RUNNING.md](RU
 
 ### Manual Installation
 
-**Backend:**
+**Backend (Windows):**
+```batch
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+**Backend (Linux/Mac):**
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 ```
 
-**Frontend:**
+**Frontend (Windows):**
+```batch
+cd frontend
+npm install
+copy .env.example .env
+```
+
+**Frontend (Linux/Mac):**
 ```bash
 cd frontend
 npm install
@@ -117,26 +138,56 @@ cp .env.example .env
 
 #### Option 1: Easy Way (Recommended) ⭐
 
+**Windows:**
+```batch
+REM Command Prompt 1 - Backend
+cd backend
+run.bat
+
+REM Command Prompt 2 - Frontend
+cd frontend
+npm run dev
+```
+
+**Linux/Mac:**
 ```bash
 # Terminal 1 - Backend
 cd backend
-./run.sh          # Linux/Mac
-run.bat           # Windows
+./run.sh
 
 # Terminal 2 - Frontend
 cd frontend
 npm run dev
 ```
 
-#### Option 2: Both at Once (Linux/Mac)
+#### Option 2: All-in-One Starter
 
+**Windows:**
+```batch
+start.bat
+```
+Opens two Command Prompt windows automatically.
+
+**Linux/Mac:**
 ```bash
 ./start.sh        # Start everything
 ./stop.sh         # Stop everything
 ```
 
-#### Option 3: Direct venv (No activation needed)
+#### Option 3: Direct venv Call (No activation needed)
 
+**Windows:**
+```batch
+REM Backend
+cd backend
+venv\Scripts\uvicorn.exe app.main:app --reload --port 8000
+
+REM Frontend (in another Command Prompt)
+cd frontend
+npm run dev
+```
+
+**Linux/Mac:**
 ```bash
 # Backend
 cd backend
@@ -147,9 +198,9 @@ cd frontend
 npm run dev
 ```
 
-Open browser to `http://localhost:5173`
+**Open browser to:** `http://localhost:5173`
 
-> **Note:** If you get "uvicorn not recognized", use the run scripts or see [RUNNING.md](RUNNING.md) for troubleshooting.
+> **Note:** If you get "uvicorn not recognized", use `run.bat` (Windows) or `./run.sh` (Linux/Mac) - see [RUNNING.md](RUNNING.md) for troubleshooting.
 
 ## Usage
 
@@ -200,8 +251,8 @@ the-griddler/
 │   │   │   ├── analyzer/  # Code & AI analyzers
 │   │   │   └── converter/ # Conversion engine
 │   │   └── main.py        # FastAPI app entry
+│   ├── run.bat           # Easy run script (Windows) ⭐
 │   ├── run.sh            # Easy run script (Linux/Mac)
-│   ├── run.bat           # Easy run script (Windows)
 │   └── requirements.txt
 ├── frontend/              # React frontend
 │   ├── src/
@@ -213,9 +264,11 @@ the-griddler/
 ├── samples/               # Sample COBOL files
 │   ├── pre/              # PRE conversion examples
 │   └── post/             # POST conversion examples
-├── setup.sh              # Automated setup script
-├── start.sh              # Start both backend and frontend
-├── stop.sh               # Stop all services
+├── setup.bat             # Automated setup (Windows) ⭐
+├── setup.sh              # Automated setup (Linux/Mac)
+├── start.bat             # Start everything (Windows) ⭐
+├── start.sh              # Start everything (Linux/Mac)
+├── stop.sh               # Stop all services (Linux/Mac)
 ├── README.md             # This file
 ├── QUICKSTART.md         # Quick start guide
 └── RUNNING.md            # Comprehensive running guide
@@ -267,18 +320,40 @@ See `samples/` directory for complete examples.
 
 ## Troubleshooting
 
-### "uvicorn not recognized"
-Use the run script: `cd backend && ./run.sh`
+### "uvicorn not recognized" or "command not found"
+**Windows:** Use `run.bat` instead:
+```batch
+cd backend
+run.bat
+```
 
-### Port already in use
+**Linux/Mac:** Use `./run.sh` instead:
 ```bash
-./stop.sh  # Stop all services
+cd backend
+./run.sh
+```
+
+### Port already in use (8000 or 5173)
+
+**Windows:**
+```batch
+REM Find what's using port 8000
+netstat -ano | findstr :8000
+
+REM Kill the process (replace <PID> with the actual number)
+taskkill /PID <PID> /F
+```
+
+**Linux/Mac:**
+```bash
+./stop.sh  # Stops all services
 # Or manually: kill $(lsof -t -i:8000)
 ```
 
-### Frontend can't connect
-1. Check backend is running: `curl http://localhost:8000/api/health`
-2. Check `frontend/.env` has correct API URL
+### Frontend can't connect to backend
+1. Check backend is running: Open `http://localhost:8000/api/health` in browser
+2. Verify `frontend\.env` has: `VITE_API_URL=http://localhost:8000`
+3. Restart both services
 
 See [RUNNING.md](RUNNING.md) for comprehensive troubleshooting.
 

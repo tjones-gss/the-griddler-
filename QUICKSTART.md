@@ -12,6 +12,13 @@ Get The Griddler up and running in 5 minutes!
 
 ### Option 1: Automated Setup (Recommended)
 
+**Windows:**
+```batch
+REM Just double-click setup.bat or run in Command Prompt:
+setup.bat
+```
+
+**Linux/Mac:**
 ```bash
 # Make setup script executable
 chmod +x setup.sh
@@ -42,21 +49,37 @@ cp .env.example .env
 
 ### Option 1: Easy Way (Recommended) ⭐
 
-**Terminal 1 - Backend:**
-```bash
+**Windows:**
+```batch
+REM Command Prompt 1 - Backend
 cd backend
-./run.sh          # Linux/Mac
-# OR
-run.bat           # Windows
-```
+run.bat
 
-**Terminal 2 - Frontend:**
-```bash
+REM Command Prompt 2 - Frontend
 cd frontend
 npm run dev
 ```
 
-### Option 2: Both at Once (Linux/Mac only)
+**Linux/Mac:**
+```bash
+# Terminal 1 - Backend
+cd backend
+./run.sh
+
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
+```
+
+### Option 2: All-in-One
+
+**Windows:**
+```batch
+REM This opens two Command Prompts automatically
+start.bat
+```
+
+**Linux/Mac:**
 ```bash
 # From project root
 ./start.sh
@@ -66,15 +89,27 @@ npm run dev
 ```
 
 ### Option 3: Manual Way
-**Terminal 1 - Backend:**
-```bash
+
+**Windows:**
+```batch
+REM Command Prompt 1 - Backend
 cd backend
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+venv\Scripts\activate
 uvicorn app.main:app --reload --port 8000
+
+REM Command Prompt 2 - Frontend
+cd frontend
+npm run dev
 ```
 
-**Terminal 2 - Frontend:**
+**Linux/Mac:**
 ```bash
+# Terminal 1 - Backend
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 - Frontend
 cd frontend
 npm run dev
 ```
@@ -117,6 +152,14 @@ npm run dev
 ## Troubleshooting
 
 ### Backend won't start / "uvicorn not recognized"
+
+**Windows:**
+- **Solution 1 (Easiest)**: Use the run script: `cd backend` then `run.bat`
+- **Solution 2**: Run directly from venv: `cd backend` then `venv\Scripts\uvicorn.exe app.main:app --reload`
+- **Solution 3**: Reinstall: `cd backend` then `venv\Scripts\pip.exe install -r requirements.txt`
+- Ensure Python 3.11+ is installed: `python --version`
+
+**Linux/Mac:**
 - **Solution 1 (Easiest)**: Use the run script: `cd backend && ./run.sh`
 - **Solution 2**: Run directly from venv: `cd backend && ./venv/bin/uvicorn app.main:app --reload`
 - **Solution 3**: Reinstall: `cd backend && ./venv/bin/pip install -r requirements.txt`
