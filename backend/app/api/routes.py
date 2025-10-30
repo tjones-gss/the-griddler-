@@ -13,6 +13,7 @@ from app.models.schemas import (
 from app.services.analyzer.code_analyzer import CodeAnalyzer
 from app.services.analyzer.ai_analyzer import AIAnalyzer
 from app.services.converter.cobol_converter import CobolConverter
+from app.services.converter.cobol_converter_v2 import CobolConverterV2
 from app.core.config import settings
 
 router = APIRouter()
@@ -20,7 +21,8 @@ router = APIRouter()
 # Initialize services
 code_analyzer = CodeAnalyzer()
 ai_analyzer = AIAnalyzer()
-converter = CobolConverter()
+converter = CobolConverter()  # Keep old converter for backward compatibility
+converter_v2 = CobolConverterV2()  # New converter with code generation
 
 
 @router.get("/health", response_model=HealthCheck)
@@ -71,16 +73,28 @@ async def compare_programs(request: CompareRequest):
 @router.post("/convert", response_model=ConversionResult)
 async def convert_program(request: ConversionRequest):
     """
-    Convert a PRE program to use SCR100 logic.
+    Convert a PRE program to use SCR100 logic with actual code generation.
 
-    This endpoint takes a PRE conversion program and automatically transforms
-    it to use SCR100 grid logic instead of REPEAT GROUPS.
+    This endpoint takes a PRE conversion program and generates actual SCR100 code:
+    - Adds COPY "SCR100.WS" to Working Storage
+    - Generates GRID-REC structure from OCCURS fields
+    - Creates grid management paragraphs (INITIALIZE-GRID, LOAD-GRID, etc.)
+    - Adds VBX event handler to P1000-CONVERSE
+    - Inserts all necessary boilerplate code
+
+    Supports:
+    - Auto-detection of screen name and OCCURS fields
+    - Manual field mappings for precise control
+    - SP2 file parsing for better field detection
     """
     try:
-        result = converter.convert(
-            request.pre_code,
-            request.rules,
-            request.auto_detect_rules
+        # Use new V2 converter with code generation
+        result = converter_v2.convert(
+            pre_code=request.pre_code,
+            sp2_code=request.sp2_code,
+            field_mappings=request.field_mappings,
+            screen_name=request.screen_name,
+            grid_id=request.grid_id
         )
         return result
 

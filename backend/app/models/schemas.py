@@ -44,9 +44,23 @@ class CompareRequest(BaseModel):
     ai_model: Optional[str] = Field("claude", description="AI model to use (claude or openai)")
 
 
+class FieldMapping(BaseModel):
+    """Field mapping from OCCURS to GRID-REC."""
+    occurs_field: str = Field(..., description="Original OCCURS field name")
+    grid_field: str = Field(..., description="Target GRID-REC field name")
+    pic_clause: str = Field(..., description="PIC clause (e.g., 'X(10)', '9(3)')")
+    column_width: Optional[int] = Field(None, description="Column width in grid")
+    column_format: Optional[str] = Field(None, description="Column format (e.g., 'X(10)', '9(3)', 'DATE')")
+    translation_id: Optional[str] = Field(None, description="Translation ID for column header")
+
+
 class ConversionRequest(BaseModel):
     """Request to convert a PRE program."""
     pre_code: str = Field(..., description="PRE conversion COBOL code to convert")
+    sp2_code: Optional[str] = Field(None, description="SP2 screen file (optional, helps detect OCCURS)")
+    field_mappings: Optional[List[FieldMapping]] = Field(None, description="Field mappings from OCCURS to GRID-REC")
+    screen_name: Optional[str] = Field(None, description="Screen name (auto-detected if not provided)")
+    grid_id: Optional[int] = Field(None, description="Unique grid ID (e.g., 9900)")
     rules: Optional[List[Dict[str, Any]]] = Field(None, description="Custom conversion rules")
     auto_detect_rules: bool = Field(True, description="Auto-detect rules from code patterns")
 
