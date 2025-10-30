@@ -96,24 +96,31 @@ if exist "venv" (
 )
 
 echo Installing Python dependencies...
-venv\Scripts\pip.exe install --quiet --upgrade pip
-venv\Scripts\pip.exe install --quiet -r requirements.txt
+echo This may take a minute...
+echo.
+
+REM Try to upgrade pip (not critical if it fails)
+venv\Scripts\python.exe -m pip install --upgrade pip >nul 2>&1
+
+REM Install requirements (show output if it fails)
+echo Installing packages from requirements.txt...
+venv\Scripts\pip.exe install -r requirements.txt
 if errorlevel 1 (
     echo.
     echo [ERROR] Failed to install Python dependencies!
     echo.
-    echo This usually means:
-    echo 1. You're using an incompatible Python version (need 3.11 or 3.12)
-    echo 2. Some packages require compilation and build tools are missing
+    echo The error message above shows what failed.
     echo.
-    echo Please:
-    echo 1. Uninstall Python 3.13 if you have it
-    echo 2. Install Python 3.11 or 3.12 from https://www.python.org/downloads/
-    echo 3. Run this setup script again
+    echo Common solutions:
+    echo 1. Check your internet connection
+    echo 2. Try running setup.bat again (sometimes packages fail to download)
+    echo 3. If you see "Microsoft Visual C++ required", install:
+    echo    https://visualstudio.microsoft.com/visual-cpp-build-tools/
     echo.
     pause
     exit /b 1
 )
+echo [OK] All Python packages installed successfully
 
 if not exist ".env" (
     echo Creating .env file from template...
